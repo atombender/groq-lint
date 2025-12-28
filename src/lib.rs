@@ -140,14 +140,28 @@ impl Linter {
 
         // Run all rules and collect findings + supercession info
         for rule in &self.ir_rules {
-            let rule_findings = rule.check(graph);
-            if !rule_findings.is_empty() {
+            let hits = rule.check(graph);
+            if !hits.is_empty() {
                 // This rule fired, so collect its superceded rules
                 for &superceded in rule.supercedes() {
                     superceded_rules.insert(superceded);
                 }
             }
-            findings.extend(rule_findings);
+
+            // Convert hits to findings
+            for hit in hits {
+                let message = match hit.detail {
+                    Some(detail) => format!("{} {}", rule.advice(), detail),
+                    None => rule.advice().to_string(),
+                };
+                findings.push(Finding {
+                    span: hit.span,
+                    message,
+                    severity: rule.severity(),
+                    rule_id: rule.id().to_string(),
+                    scope: hit.scope,
+                });
+            }
         }
 
         // Filter out findings from superceded rules

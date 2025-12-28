@@ -2,7 +2,7 @@
 
 use crate::ir::IrGraph;
 use crate::ir::{BinaryOp, LiteralValue, NodeKind};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects `_id match "*pattern*"` usage.
 pub struct IrMatchOnId;
@@ -20,7 +20,7 @@ impl IrRule for IrMatchOnId {
         "`match` is intended for full-text matching and may not work as expected on _id."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         graph
             .binary_ops()
             .filter_map(|node| {
@@ -38,13 +38,7 @@ impl IrRule for IrMatchOnId {
                             let rhs_node = graph.node(*rhs);
                             if let NodeKind::Literal(LiteralValue::String(s)) = &rhs_node.kind {
                                 if s.contains('*') {
-                                    return Some(Finding {
-                                        span: Span::from(node.span),
-                                        message: self.advice().to_string(),
-                                        severity: Severity::Low,
-                                        rule_id: self.id().to_string(),
-                                        scope: Scope::Node,
-                                    });
+                                    return Some(Hit::at(node.span));
                                 }
                             }
                         }

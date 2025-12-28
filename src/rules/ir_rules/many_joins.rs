@@ -1,7 +1,7 @@
 //! IR-based rule for detecting queries with many joins.
 
 use crate::ir::IrGraph;
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects queries with more than 10 dereference operators.
 pub struct IrManyJoins;
@@ -19,17 +19,11 @@ impl IrRule for IrManyJoins {
         "The query uses more than 10 `->` operators. Consider reducing the number of joins."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         let join_count = graph.joins().count();
 
         if join_count > 10 {
-            vec![Finding {
-                span: Span::from(graph.root().span),
-                message: format!("{} Found {} joins.", self.advice(), join_count),
-                severity: Severity::Medium,
-                rule_id: self.id().to_string(),
-                scope: Scope::Global,
-            }]
+            vec![Hit::global(graph.root().span).with_detail(format!("Found {} joins.", join_count))]
         } else {
             vec![]
         }

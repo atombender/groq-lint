@@ -2,7 +2,7 @@
 
 use crate::ir::{IrGraph, NodeId};
 use crate::ir::{NodeKind, Provenance};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects comparisons where both sides are non-literal (can't use indices).
 pub struct IrNonLiteralComparison;
@@ -20,7 +20,7 @@ impl IrRule for IrNonLiteralComparison {
         "Comparisons between two non-literal fields cannot use indices efficiently."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         graph
             .binary_ops()
             .filter_map(|node| {
@@ -36,13 +36,7 @@ impl IrRule for IrNonLiteralComparison {
                     // Per rules.yaml: parent refs (^) on either side are allowed
                     // Both sides must be non-literal for this to trigger
                     if !lhs_literal && !rhs_literal {
-                        return Some(Finding {
-                            span: Span::from(node.span),
-                            message: self.advice().to_string(),
-                            severity: Severity::High, // Per rules.yaml
-                            rule_id: self.id().to_string(),
-                            scope: Scope::Node,
-                        });
+                        return Some(Hit::at(node.span));
                     }
                 }
                 None

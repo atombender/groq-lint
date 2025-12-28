@@ -54,6 +54,12 @@ pub fn get_advice(rule_id: &str) -> Option<&'static str> {
     get_rules_map().get(rule_id).map(|r| r.advice.as_str())
 }
 
+/// Look up the severity for a rule by its ID.
+/// Returns the severity string if found, or None if the rule doesn't exist.
+pub fn get_severity(rule_id: &str) -> Option<&'static str> {
+    get_rules_map().get(rule_id).map(|r| r.severity.as_str())
+}
+
 /// Look up full metadata for a rule by its ID.
 pub fn get_rule_meta(rule_id: &str) -> Option<&'static RuleMeta> {
     get_rules_map().get(rule_id)

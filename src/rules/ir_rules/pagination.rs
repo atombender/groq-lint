@@ -2,7 +2,7 @@
 
 use crate::ir::IrGraph;
 use crate::ir::{LiteralValue, NodeKind};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects deep pagination (start index > 1000).
 pub struct IrDeepPagination;
@@ -20,8 +20,8 @@ impl IrRule for IrDeepPagination {
         "Deep pagination is slow. Consider cursor-based pagination using `_id`."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
-        let mut findings = vec![];
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
+        let mut hits = vec![];
 
         for node in graph.nodes() {
             match &node.kind {
@@ -33,13 +33,7 @@ impl IrRule for IrDeepPagination {
                     let start_node = graph.node(*start_id);
                     if let NodeKind::Literal(LiteralValue::Int(val)) = &start_node.kind {
                         if *val > 1000 {
-                            findings.push(Finding {
-                                span: Span::from(node.span),
-                                message: self.advice().to_string(),
-                                severity: Severity::Medium,
-                                rule_id: self.id().to_string(),
-                                scope: Scope::Node,
-                            });
+                            hits.push(Hit::at(node.span));
                         }
                     }
                 }
@@ -48,13 +42,7 @@ impl IrRule for IrDeepPagination {
                     let start_node = graph.node(*start);
                     if let NodeKind::Literal(LiteralValue::Int(val)) = &start_node.kind {
                         if *val > 1000 {
-                            findings.push(Finding {
-                                span: Span::from(node.span),
-                                message: self.advice().to_string(),
-                                severity: Severity::Medium,
-                                rule_id: self.id().to_string(),
-                                scope: Scope::Node,
-                            });
+                            hits.push(Hit::at(node.span));
                         }
                     }
                 }
@@ -62,7 +50,7 @@ impl IrRule for IrDeepPagination {
             }
         }
 
-        findings
+        hits
     }
 }
 
@@ -82,8 +70,8 @@ impl IrRule for IrDeepPaginationParam {
         "If given a large value, this can cause deep pagination, which is slow. Consider cursor-based pagination."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
-        let mut findings = vec![];
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
+        let mut hits = vec![];
 
         for node in graph.nodes() {
             match &node.kind {
@@ -94,33 +82,21 @@ impl IrRule for IrDeepPaginationParam {
                 } => {
                     let start_node = graph.node(*start_id);
                     if matches!(start_node.kind, NodeKind::Param { .. }) {
-                        findings.push(Finding {
-                            span: Span::from(node.span),
-                            message: self.advice().to_string(),
-                            severity: Severity::Medium,
-                            rule_id: self.id().to_string(),
-                            scope: Scope::Node,
-                        });
+                        hits.push(Hit::at(node.span));
                     }
                 }
                 // Check Range nodes
                 NodeKind::Range { start, .. } => {
                     let start_node = graph.node(*start);
                     if matches!(start_node.kind, NodeKind::Param { .. }) {
-                        findings.push(Finding {
-                            span: Span::from(node.span),
-                            message: self.advice().to_string(),
-                            severity: Severity::Medium,
-                            rule_id: self.id().to_string(),
-                            scope: Scope::Node,
-                        });
+                        hits.push(Hit::at(node.span));
                     }
                 }
                 _ => {}
             }
         }
 
-        findings
+        hits
     }
 }
 
@@ -140,8 +116,8 @@ impl IrRule for IrLargePages {
         "Fetching many results at once can be slow. Consider breaking into smaller batches."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
-        let mut findings = vec![];
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
+        let mut hits = vec![];
 
         for node in graph.nodes() {
             match &node.kind {
@@ -160,13 +136,7 @@ impl IrRule for IrLargePages {
                             let end_node = graph.node(*end_id);
                             if let NodeKind::Literal(LiteralValue::Int(val)) = &end_node.kind {
                                 if *val > 100 {
-                                    findings.push(Finding {
-                                        span: Span::from(node.span),
-                                        message: self.advice().to_string(),
-                                        severity: Severity::Medium,
-                                        rule_id: self.id().to_string(),
-                                        scope: Scope::Node,
-                                    });
+                                    hits.push(Hit::at(node.span));
                                 }
                             }
                         }
@@ -182,13 +152,7 @@ impl IrRule for IrLargePages {
                         let end_node = graph.node(*end);
                         if let NodeKind::Literal(LiteralValue::Int(val)) = &end_node.kind {
                             if *val > 100 {
-                                findings.push(Finding {
-                                    span: Span::from(node.span),
-                                    message: self.advice().to_string(),
-                                    severity: Severity::Medium,
-                                    rule_id: self.id().to_string(),
-                                    scope: Scope::Node,
-                                });
+                                hits.push(Hit::at(node.span));
                             }
                         }
                     }
@@ -197,6 +161,6 @@ impl IrRule for IrLargePages {
             }
         }
 
-        findings
+        hits
     }
 }

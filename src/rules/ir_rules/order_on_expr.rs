@@ -2,7 +2,7 @@
 
 use crate::ir::{BinaryOp, NodeKind};
 use crate::ir::{IrGraph, NodeId};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects order() calls with arguments that aren't plain attributes or allowed functions.
 pub struct IrOrderOnExpr;
@@ -20,8 +20,8 @@ impl IrRule for IrOrderOnExpr {
         "Avoid ordering on computed values. Indices cannot be used to sort."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
-        let mut findings = vec![];
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
+        let mut hits = vec![];
 
         for node in graph.function_calls() {
             if let NodeKind::FunctionCall { name, args, .. } = &node.kind {
@@ -32,20 +32,14 @@ impl IrRule for IrOrderOnExpr {
 
                         if !is_allowed_order_expr(graph, check_id) {
                             let arg_node = graph.node(arg_id);
-                            findings.push(Finding {
-                                span: Span::from(arg_node.span),
-                                message: self.advice().to_string(),
-                                severity: Severity::High,
-                                rule_id: self.id().to_string(),
-                                scope: Scope::Node,
-                            });
+                            hits.push(Hit::at(arg_node.span));
                         }
                     }
                 }
             }
         }
 
-        findings
+        hits
     }
 }
 

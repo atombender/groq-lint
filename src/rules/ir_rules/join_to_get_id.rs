@@ -2,7 +2,7 @@
 
 use crate::ir::IrGraph;
 use crate::ir::NodeKind;
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects `a->b._id` patterns that should be `a._ref`.
 pub struct IrJoinToGetId;
@@ -20,7 +20,7 @@ impl IrRule for IrJoinToGetId {
         "Avoid using `->` to retrieve `_id` of a document. Use `._ref` instead."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         // Pattern: Access { base: Join { ... }, attribute: "_id" }
         graph
             .nodes()
@@ -30,13 +30,7 @@ impl IrRule for IrJoinToGetId {
                         // Check if base is a Join
                         let base_node = graph.node(*base);
                         if matches!(base_node.kind, NodeKind::Join { .. }) {
-                            return Some(Finding {
-                                span: Span::from(node.span),
-                                message: self.advice().to_string(),
-                                severity: Severity::Medium,
-                                rule_id: self.id().to_string(),
-                                scope: Scope::Node,
-                            });
+                            return Some(Hit::at(node.span));
                         }
                     }
                 }

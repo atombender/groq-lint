@@ -2,7 +2,7 @@
 
 use crate::ir::IrGraph;
 use crate::ir::NodeKind;
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects arithmetic operations inside filter constraints.
 pub struct IrComputedValueInFilter;
@@ -20,7 +20,7 @@ impl IrRule for IrComputedValueInFilter {
         "Avoid computed values (concatenation, arithmetic, etc.) in filters. Indices cannot be used."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         graph
             .binary_ops()
             .filter(|node| {
@@ -33,13 +33,7 @@ impl IrRule for IrComputedValueInFilter {
                 }
                 false
             })
-            .map(|node| Finding {
-                span: Span::from(node.span),
-                message: self.advice().to_string(),
-                severity: Severity::High,
-                rule_id: self.id().to_string(),
-                scope: Scope::Node,
-            })
+            .map(|node| Hit::at(node.span))
             .collect()
     }
 }

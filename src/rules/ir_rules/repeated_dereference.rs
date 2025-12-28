@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use crate::ir::NodeKind;
 use crate::ir::{IrGraph, NodeId};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects multiple dereferences on the same attribute within a projection.
 pub struct IrRepeatedDereference;
@@ -22,8 +22,8 @@ impl IrRule for IrRepeatedDereference {
         "Repeatedly resolving the same reference is inefficient. Consider a single sub-projection."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
-        let mut findings = vec![];
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
+        let mut hits = vec![];
 
         // Find all projections
         for node in graph.projections() {
@@ -38,13 +38,7 @@ impl IrRule for IrRepeatedDereference {
                         if dereferenced_attrs.contains(&attr_name) {
                             // Found repeated dereference - report the join node span
                             let join_node = graph.node(join_node_id);
-                            findings.push(Finding {
-                                span: Span::from(join_node.span),
-                                message: self.advice().to_string(),
-                                severity: Severity::Low,
-                                rule_id: self.id().to_string(),
-                                scope: Scope::Node,
-                            });
+                            hits.push(Hit::at(join_node.span));
                         } else {
                             dereferenced_attrs.insert(attr_name);
                         }
@@ -53,7 +47,7 @@ impl IrRule for IrRepeatedDereference {
             }
         }
 
-        findings
+        hits
     }
 }
 

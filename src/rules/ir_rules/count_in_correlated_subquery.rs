@@ -2,7 +2,7 @@
 
 use crate::ir::{IrGraph, NodeId};
 use crate::ir::{NodeKind, Provenance};
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects count() function calls on correlated subqueries.
 pub struct IrCountInCorrelatedSubquery;
@@ -20,7 +20,7 @@ impl IrRule for IrCountInCorrelatedSubquery {
         "Using `count()` on a correlated subquery does not execute as an efficient aggregation."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         graph
             .function_calls()
             .filter_map(|node| {
@@ -29,13 +29,7 @@ impl IrRule for IrCountInCorrelatedSubquery {
                         // Check if any argument is a correlated subquery
                         for &arg_id in args {
                             if is_correlated(graph, arg_id) {
-                                return Some(Finding {
-                                    span: Span::from(node.span),
-                                    message: self.advice().to_string(),
-                                    severity: Severity::Low,
-                                    rule_id: self.id().to_string(),
-                                    scope: Scope::Node,
-                                });
+                                return Some(Hit::at(node.span));
                             }
                         }
                     }

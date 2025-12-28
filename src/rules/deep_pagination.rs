@@ -3,6 +3,8 @@ use groq_parser::ast::{Expr, Literal};
 
 pub struct DeepPagination;
 
+const PAGINATION_THRESHOLD: i64 = 1000;
+
 impl Rule for DeepPagination {
     fn id(&self) -> &'static str {
         "deep_pagination"
@@ -21,7 +23,7 @@ impl Rule for DeepPagination {
 
         if let Expr::Range(range) = expr {
             if let Expr::Literal(Literal::Integer(i)) = &*range.start {
-                if i.value > 1000 {
+                if i.value > PAGINATION_THRESHOLD {
                     findings.push(Finding {
                         span: range.pos.into(),
                         message: self.description().to_string(),

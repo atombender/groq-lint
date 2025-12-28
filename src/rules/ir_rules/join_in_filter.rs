@@ -1,7 +1,7 @@
 //! IR-based rule for detecting joins inside filters.
 
 use crate::ir::IrGraph;
-use crate::rules::{Finding, IrRule, Scope, Severity, Span};
+use crate::rules::{Hit, IrRule};
 
 /// Detects dereference operations inside filter constraints.
 pub struct IrJoinInFilter;
@@ -19,17 +19,11 @@ impl IrRule for IrJoinInFilter {
         "Avoid `->` inside filters. Move the join outside and filter on a local attribute instead."
     }
 
-    fn check(&self, graph: &IrGraph) -> Vec<Finding> {
+    fn check(&self, graph: &IrGraph) -> Vec<Hit> {
         graph
             .joins()
             .filter(|join| graph.in_filter(join))
-            .map(|join| Finding {
-                span: Span::from(join.span),
-                message: self.advice().to_string(),
-                severity: Severity::High,
-                rule_id: self.id().to_string(),
-                scope: Scope::Node,
-            })
+            .map(|join| Hit::at(join.span))
             .collect()
     }
 }

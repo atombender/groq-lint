@@ -48,6 +48,41 @@ pub enum RuleContext {
     WholeQuery,
 }
 
+/// A hit returned by IR rules - minimal data that the rule knows.
+/// The linter fills in the rest (rule_id, severity, base message) from metadata.
+#[derive(Debug, Clone)]
+pub struct Hit {
+    pub span: Span,
+    pub detail: Option<String>,
+    pub scope: Scope,
+}
+
+impl Hit {
+    /// Create a node-scoped hit at the given span.
+    pub fn at(span: impl Into<Span>) -> Self {
+        Self {
+            span: span.into(),
+            detail: None,
+            scope: Scope::Node,
+        }
+    }
+
+    /// Create a global-scoped hit at the given span.
+    pub fn global(span: impl Into<Span>) -> Self {
+        Self {
+            span: span.into(),
+            detail: None,
+            scope: Scope::Global,
+        }
+    }
+
+    /// Add extra detail to append to the advice message.
+    pub fn with_detail(mut self, detail: impl Into<String>) -> Self {
+        self.detail = Some(detail.into());
+        self
+    }
+}
+
 /// Legacy trait for AST-based rules.
 /// New rules should use IrRule instead.
 pub trait Rule {
@@ -78,8 +113,18 @@ pub trait IrRule: Send + Sync {
         crate::rule_meta::get_advice(self.id()).unwrap_or(self.description())
     }
 
+    /// Severity from rules.yaml. Falls back to Medium if not found.
+    fn severity(&self) -> Severity {
+        match crate::rule_meta::get_severity(self.id()) {
+            Some("high") => Severity::High,
+            Some("low") => Severity::Low,
+            _ => Severity::Medium,
+        }
+    }
+
     /// Check the IR graph for violations of this rule.
-    fn check(&self, graph: &IrGraph) -> Vec<Finding>;
+    /// Returns hits that the linter will convert to findings.
+    fn check(&self, graph: &IrGraph) -> Vec<Hit>;
 
     /// Rule IDs that this rule supercedes.
     /// If this rule fires, findings from superceded rules are filtered out.
