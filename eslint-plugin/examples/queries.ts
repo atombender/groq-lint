@@ -1,35 +1,39 @@
 // Example TypeScript file with GROQ queries
 // Run: npx eslint queries.ts
 
-// Type definition for the groq tag
+// Type definitions (normally from 'groq' package)
 const groq = (strings: TemplateStringsArray): string => strings.join("");
+const defineQuery = <T extends string>(query: T): T => query;
+
+// === Using groq`...` template tag ===
 
 // Good: Simple filter query
 const postsQuery = groq`*[_type == "post"]`;
 
-// Good: Query with projection
-const postTitlesQuery = groq`*[_type == "post"]{
-  title,
-  slug
-}`;
-
-// Bad: Join inside filter (will trigger join_in_filter)
+// Bad: Join inside filter
 const postsByAuthorQuery = groq`*[_type == "post" && author->name == "Alice"]`;
 
-// Bad: Using -> to get _id (will trigger join_to_get_id)
-const authorIdsQuery = groq`*[_type == "post"]{
-  "authorId": author->_id
-}`;
+// === Using defineQuery() ===
+
+// Good: Simple query with defineQuery
+const articlesQuery = defineQuery(`*[_type == "article"]`);
+
+// Bad: Join inside filter with defineQuery (template literal)
+const articlesByAuthorQuery = defineQuery(`*[_type == "article" && author->name == "Bob"]`);
+
+// Bad: Using -> to get _id with defineQuery (string literal)
+const authorIdsQuery = defineQuery('*[_type == "post"]{ "authorId": author->_id }');
 
 // Good: Correlated subquery with parent reference
-const draftsQuery = groq`*[_type == "post"]{
+const draftsQuery = defineQuery(`*[_type == "post"]{
   "draft": *[_id == "drafts." + ^._id][0]
-}`;
+}`);
 
 export {
   postsQuery,
-  postTitlesQuery,
   postsByAuthorQuery,
+  articlesQuery,
+  articlesByAuthorQuery,
   authorIdsQuery,
   draftsQuery,
 };
