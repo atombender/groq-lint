@@ -74,6 +74,10 @@ fn is_literal_or_parent(graph: &IrGraph, node_id: NodeId) -> bool {
             let base_node = graph.node(*base);
             matches!(base_node.kind, NodeKind::Parent { .. }) || is_literal_or_parent(graph, *base)
         }
+        // Binary expressions: check if either operand involves parent ref (e.g., "drafts." + ^._id)
+        NodeKind::Binary { lhs, rhs, .. } => {
+            is_literal_or_parent(graph, *lhs) || is_literal_or_parent(graph, *rhs)
+        }
         _ => false,
     }
 }

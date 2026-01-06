@@ -36,7 +36,8 @@ rules:
 
   - id: computed_value_in_filter
     pattern: |
-      Binary operators like '+', '-', '*', '/' occurring within the constraint expression of a filter ([ ]).
+      Binary operators like '+', '-', '*', '/' occurring within the constraint expression of a filter ([ ]),
+      EXCEPT when one side references a parent scope (^), which enables efficient correlated subquery execution.
     advice: |
       Avoid computed values (concatenation, arithmetic, etc.) in filters. Indices cannot be used.
       Consider adding additional filters to reduce the search space.

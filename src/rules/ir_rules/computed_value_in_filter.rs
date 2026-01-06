@@ -1,7 +1,6 @@
 //! IR-based rule for detecting computed values in filters.
 
-use crate::ir::IrGraph;
-use crate::ir::NodeKind;
+use crate::ir::{IrGraph, NodeId, NodeKind, Provenance};
 use crate::rules::{Hit, IrRule};
 
 /// Detects arithmetic operations inside filter constraints.
@@ -24,11 +23,17 @@ impl IrRule for IrComputedValueInFilter {
         graph
             .binary_ops()
             .filter(|node| {
-                if let NodeKind::Binary { op, .. } = &node.kind {
+                if let NodeKind::Binary { op, lhs, rhs } = &node.kind {
                     // Check if it's an arithmetic operator
                     if op.is_arithmetic() {
                         // Check if we're inside a filter
-                        return graph.in_filter(node);
+                        if graph.in_filter(node) {
+                            // Allow if either operand involves a parent reference (correlated subquery)
+                            if involves_parent(graph, *lhs) || involves_parent(graph, *rhs) {
+                                return false;
+                            }
+                            return true;
+                        }
                     }
                 }
                 false
@@ -36,4 +41,31 @@ impl IrRule for IrComputedValueInFilter {
             .map(|node| Hit::at(node.span))
             .collect()
     }
+}
+
+/// Check if an expression involves a parent scope reference (^).
+fn involves_parent(graph: &IrGraph, node_id: NodeId) -> bool {
+    let node = graph.node(node_id);
+
+    // Check provenance
+    if matches!(node.provenance, Provenance::Parent { .. }) {
+        return true;
+    }
+
+    // Check node kind
+    if matches!(node.kind, NodeKind::Parent { .. }) {
+        return true;
+    }
+
+    // Recursively check descendants
+    for descendant in graph.descendants(node_id) {
+        if matches!(descendant.kind, NodeKind::Parent { .. }) {
+            return true;
+        }
+        if matches!(descendant.provenance, Provenance::Parent { .. }) {
+            return true;
+        }
+    }
+
+    false
 }
