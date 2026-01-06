@@ -2,6 +2,9 @@ pub mod ir;
 pub mod rule_meta;
 pub mod rules;
 
+#[cfg(feature = "wasm")]
+mod wasm;
+
 use crate::ir::IrGraph;
 use crate::rules::{Context, Finding, IrRule, Rule, RuleContext};
 use groq_parser::ast::Expr;

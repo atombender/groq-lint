@@ -46,6 +46,10 @@ fn main() {
 }
 ```
 
+### As an ESLint plugin
+
+See the [eslint-plugin-groq-lint](./eslint-plugin/README.md) for instructions on using groq-lint as an ESLint plugin to lint GROQ queries inside JavaScript/TypeScript files.
+
 ## Rules
 
 The linter checks for:
