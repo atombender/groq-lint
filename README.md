@@ -54,7 +54,11 @@ The linter checks for:
 - **deep_pagination** - Using large offsets in slices is inefficient
 - **many_joins** - Queries with many joins may have poor performance
 - **very_large_query** / **extremely_large_query** - Oversized queries
-- And more...
+- And more.
+
+## Agent-driven development
+
+The linting rules are specified in `rules.yaml`. This is considered the source of truth for the linter, not the code. Instead, we rely on an LLM (Claude Opus 4.5 at the moment of writing) to update rules from this source. Consider this an experiment in agent-driven development.
 
 ## License
 
