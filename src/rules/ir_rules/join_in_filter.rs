@@ -1,12 +1,12 @@
 //! IR-based rule for detecting joins inside filters.
 
 use crate::ir::IrGraph;
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects dereference operations inside filter constraints.
-pub struct IrJoinInFilter;
+pub struct JoinInFilter;
 
-impl IrRule for IrJoinInFilter {
+impl Rule for JoinInFilter {
     fn id(&self) -> &'static str {
         "join_in_filter"
     }

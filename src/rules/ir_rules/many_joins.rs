@@ -1,12 +1,12 @@
 //! IR-based rule for detecting queries with many joins.
 
 use crate::ir::IrGraph;
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects queries with more than 10 dereference operators.
-pub struct IrManyJoins;
+pub struct ManyJoins;
 
-impl IrRule for IrManyJoins {
+impl Rule for ManyJoins {
     fn id(&self) -> &'static str {
         "many_joins"
     }

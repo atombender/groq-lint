@@ -1,7 +1,6 @@
-//! IR-based lint rules.
+//! Lint rule implementations.
 //!
-//! These rules operate on the semantic IR graph rather than the raw AST,
-//! making them easier to write and more maintainable.
+//! Each rule operates on the semantic IR graph.
 
 mod computed_value_in_filter;
 mod count_in_correlated_subquery;
@@ -15,14 +14,14 @@ mod pagination;
 mod query_size;
 mod repeated_dereference;
 
-pub use computed_value_in_filter::IrComputedValueInFilter;
-pub use count_in_correlated_subquery::IrCountInCorrelatedSubquery;
-pub use join_in_filter::IrJoinInFilter;
-pub use join_to_get_id::IrJoinToGetId;
-pub use many_joins::IrManyJoins;
-pub use match_on_id::IrMatchOnId;
-pub use non_literal_comparison::IrNonLiteralComparison;
-pub use order_on_expr::IrOrderOnExpr;
-pub use pagination::{IrDeepPagination, IrDeepPaginationParam, IrLargePages};
-pub use query_size::{IrExtremelyLargeQuery, IrVeryLargeQuery};
-pub use repeated_dereference::IrRepeatedDereference;
+pub use computed_value_in_filter::ComputedValueInFilter;
+pub use count_in_correlated_subquery::CountInCorrelatedSubquery;
+pub use join_in_filter::JoinInFilter;
+pub use join_to_get_id::JoinToGetId;
+pub use many_joins::ManyJoins;
+pub use match_on_id::MatchOnId;
+pub use non_literal_comparison::NonLiteralComparison;
+pub use order_on_expr::OrderOnExpr;
+pub use pagination::{DeepPagination, DeepPaginationParam, LargePages};
+pub use query_size::{ExtremelyLargeQuery, VeryLargeQuery};
+pub use repeated_dereference::RepeatedDereference;

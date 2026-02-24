@@ -2,12 +2,12 @@
 
 use crate::ir::IrGraph;
 use crate::ir::NodeKind;
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects `a->b._id` patterns that should be `a._ref`.
-pub struct IrJoinToGetId;
+pub struct JoinToGetId;
 
-impl IrRule for IrJoinToGetId {
+impl Rule for JoinToGetId {
     fn id(&self) -> &'static str {
         "join_to_get_id"
     }

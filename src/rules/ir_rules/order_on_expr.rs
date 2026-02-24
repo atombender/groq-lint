@@ -2,12 +2,12 @@
 
 use crate::ir::{BinaryOp, NodeKind};
 use crate::ir::{IrGraph, NodeId};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects order() calls with arguments that aren't plain attributes or allowed functions.
-pub struct IrOrderOnExpr;
+pub struct OrderOnExpr;
 
-impl IrRule for IrOrderOnExpr {
+impl Rule for OrderOnExpr {
     fn id(&self) -> &'static str {
         "order_on_expr"
     }

@@ -2,12 +2,12 @@
 
 use crate::ir::{IrGraph, NodeId};
 use crate::ir::{NodeKind, Provenance};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects count() function calls on correlated subqueries.
-pub struct IrCountInCorrelatedSubquery;
+pub struct CountInCorrelatedSubquery;
 
-impl IrRule for IrCountInCorrelatedSubquery {
+impl Rule for CountInCorrelatedSubquery {
     fn id(&self) -> &'static str {
         "count_in_correlated_subquery"
     }

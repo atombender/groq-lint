@@ -2,12 +2,12 @@
 
 use crate::ir::{IrGraph, NodeId};
 use crate::ir::{NodeKind, Provenance};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects comparisons where both sides are non-literal (can't use indices).
-pub struct IrNonLiteralComparison;
+pub struct NonLiteralComparison;
 
-impl IrRule for IrNonLiteralComparison {
+impl Rule for NonLiteralComparison {
     fn id(&self) -> &'static str {
         "non_literal_comparison"
     }

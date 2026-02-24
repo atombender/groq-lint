@@ -1,12 +1,12 @@
 //! IR-based rules for detecting oversized queries.
 
 use crate::ir::IrGraph;
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects queries larger than 10KB.
-pub struct IrVeryLargeQuery;
+pub struct VeryLargeQuery;
 
-impl IrRule for IrVeryLargeQuery {
+impl Rule for VeryLargeQuery {
     fn id(&self) -> &'static str {
         "very_large_query"
     }
@@ -32,9 +32,9 @@ impl IrRule for IrVeryLargeQuery {
 }
 
 /// Detects queries larger than 100KB.
-pub struct IrExtremelyLargeQuery;
+pub struct ExtremelyLargeQuery;
 
-impl IrRule for IrExtremelyLargeQuery {
+impl Rule for ExtremelyLargeQuery {
     fn id(&self) -> &'static str {
         "extremely_large_query"
     }

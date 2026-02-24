@@ -2,12 +2,12 @@
 
 use crate::ir::IrGraph;
 use crate::ir::{BinaryOp, LiteralValue, NodeKind};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects `_id match "*pattern*"` usage.
-pub struct IrMatchOnId;
+pub struct MatchOnId;
 
-impl IrRule for IrMatchOnId {
+impl Rule for MatchOnId {
     fn id(&self) -> &'static str {
         "match_on_id"
     }

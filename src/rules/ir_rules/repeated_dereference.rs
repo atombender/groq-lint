@@ -4,12 +4,12 @@ use std::collections::HashSet;
 
 use crate::ir::NodeKind;
 use crate::ir::{IrGraph, NodeId};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects multiple dereferences on the same attribute within a projection.
-pub struct IrRepeatedDereference;
+pub struct RepeatedDereference;
 
-impl IrRule for IrRepeatedDereference {
+impl Rule for RepeatedDereference {
     fn id(&self) -> &'static str {
         "repeated_dereference"
     }

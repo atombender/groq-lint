@@ -2,12 +2,12 @@
 
 use crate::ir::IrGraph;
 use crate::ir::{LiteralValue, NodeKind};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects deep pagination (start index > 1000).
-pub struct IrDeepPagination;
+pub struct DeepPagination;
 
-impl IrRule for IrDeepPagination {
+impl Rule for DeepPagination {
     fn id(&self) -> &'static str {
         "deep_pagination"
     }
@@ -55,9 +55,9 @@ impl IrRule for IrDeepPagination {
 }
 
 /// Detects pagination with $param start index.
-pub struct IrDeepPaginationParam;
+pub struct DeepPaginationParam;
 
-impl IrRule for IrDeepPaginationParam {
+impl Rule for DeepPaginationParam {
     fn id(&self) -> &'static str {
         "deep_pagination_param"
     }
@@ -101,9 +101,9 @@ impl IrRule for IrDeepPaginationParam {
 }
 
 /// Detects large page fetches (> 100 items starting from 0).
-pub struct IrLargePages;
+pub struct LargePages;
 
-impl IrRule for IrLargePages {
+impl Rule for LargePages {
     fn id(&self) -> &'static str {
         "large_pages"
     }

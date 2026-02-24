@@ -1,12 +1,12 @@
 //! IR-based rule for detecting computed values in filters.
 
 use crate::ir::{IrGraph, NodeId, NodeKind, Provenance};
-use crate::rules::{Hit, IrRule};
+use crate::rules::{Hit, Rule};
 
 /// Detects arithmetic operations inside filter constraints.
-pub struct IrComputedValueInFilter;
+pub struct ComputedValueInFilter;
 
-impl IrRule for IrComputedValueInFilter {
+impl Rule for ComputedValueInFilter {
     fn id(&self) -> &'static str {
         "computed_value_in_filter"
     }
