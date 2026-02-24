@@ -786,8 +786,8 @@ mod tests {
 
     fn parse_and_lower(query: &str) -> IrGraph {
         let mut parser = Parser::new(query);
-        let ast = parser.parse().expect("Failed to parse");
-        lower(&ast, query.len())
+        let result = parser.parse().expect("Failed to parse");
+        lower(&result.expr, query.len())
     }
 
     #[test]

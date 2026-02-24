@@ -90,6 +90,9 @@ pub fn lint(query: &str) -> String {
     };
 
     serde_json::to_string(&result).unwrap_or_else(|e| {
-        format!(r#"{{"success":false,"findings":[],"error":"Serialization error: {}"}}"#, e)
+        format!(
+            r#"{{"success":false,"findings":[],"error":"Serialization error: {}"}}"#,
+            e
+        )
     })
 }

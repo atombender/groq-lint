@@ -266,17 +266,17 @@ impl Linter {
 /// Lint a GROQ query string using IR-based rules.
 pub fn lint(query: &str) -> Result<Vec<Finding>, Box<dyn std::error::Error>> {
     let mut parser = Parser::new(query);
-    let ast = parser.parse()?;
+    let result = parser.parse()?;
     let linter = Linter::with_ir_rules();
-    Ok(linter.lint(&ast, query.len()))
+    Ok(linter.lint(&result.expr, query.len()))
 }
 
 /// Lint a GROQ query string using legacy AST-based rules.
 pub fn lint_legacy(query: &str) -> Result<Vec<Finding>, Box<dyn std::error::Error>> {
     let mut parser = Parser::new(query);
-    let ast = parser.parse()?;
+    let result = parser.parse()?;
     let linter = Linter::with_all_rules();
-    Ok(linter.lint(&ast, query.len()))
+    Ok(linter.lint(&result.expr, query.len()))
 }
 
 #[cfg(test)]
