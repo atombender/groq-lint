@@ -9,7 +9,7 @@ use crate::rules::{Finding, Rule};
 use groq_parser::ast::Expr;
 use groq_parser::parser::Parser;
 
-use crate::rules::ir_rules::{
+use crate::rules::{
     ComputedValueInFilter, CountInCorrelatedSubquery, DeepPagination, DeepPaginationParam,
     ExtremelyLargeQuery, JoinInFilter, JoinToGetId, LargePages, ManyJoins, MatchOnId,
     NonLiteralComparison, OrderOnExpr, RepeatedDereference, VeryLargeQuery,
