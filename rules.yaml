@@ -100,7 +100,8 @@ rules:
       - now() is considered a literal.
       - Params (e.g. foo) are considered literals.
       - Referring to a parent-scope attribute (e.g., `foo == ^.bar`) on either left or right side is fine
-        and not covered by this rule.
+        and not covered by this rule. This extends to dereferences rooted in a parent ref
+        (e.g., `foo._ref == ^.library->_id`), which still resolve through the parent scope.
     advice: |
       Comparisons between two non-literal fields cannot be executed in an efficient manner.
       Consider adding additional filters to reduce the search space.

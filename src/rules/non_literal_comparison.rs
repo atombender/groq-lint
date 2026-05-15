@@ -69,11 +69,11 @@ fn is_literal_or_parent(graph: &IrGraph, node_id: NodeId) -> bool {
         NodeKind::Parent { .. } => true,
         // now() is considered a literal
         NodeKind::FunctionCall { name, .. } if name == "now" => true,
-        // Check if any descendant is a parent ref (for ^.foo patterns)
-        NodeKind::Access { base, .. } => {
-            let base_node = graph.node(*base);
-            matches!(base_node.kind, NodeKind::Parent { .. }) || is_literal_or_parent(graph, *base)
-        }
+        // Walk through attribute access (e.g., ^.foo or ^.foo.bar)
+        NodeKind::Access { base, .. } => is_literal_or_parent(graph, *base),
+        // Walk through dereferences (e.g., ^.library->_id) — a join rooted
+        // in a parent ref still resolves through the parent scope.
+        NodeKind::Join { base } => is_literal_or_parent(graph, *base),
         // Binary expressions: check if either operand involves parent ref (e.g., "drafts." + ^._id)
         NodeKind::Binary { lhs, rhs, .. } => {
             is_literal_or_parent(graph, *lhs) || is_literal_or_parent(graph, *rhs)
