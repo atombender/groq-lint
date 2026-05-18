@@ -111,3 +111,99 @@ fn is_datetime_call(kind: &NodeKind) -> bool {
     matches!(kind, NodeKind::FunctionCall { name, namespace, .. }
         if name == "dateTime" && namespace.is_none())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lint;
+
+    fn fires(query: &str) -> bool {
+        let findings = lint(query).expect("query should parse");
+        findings
+            .iter()
+            .any(|f| f.rule_id == "computed_value_in_filter")
+    }
+
+    #[track_caller]
+    fn assert_fires(query: &str) {
+        assert!(
+            fires(query),
+            "expected computed_value_in_filter to fire on: {query}"
+        );
+    }
+
+    #[track_caller]
+    fn assert_ok(query: &str) {
+        assert!(
+            !fires(query),
+            "expected computed_value_in_filter NOT to fire on: {query}"
+        );
+    }
+
+    #[test]
+    fn concat_in_dataset_filter_fires() {
+        assert_fires(r#"*[foo == "bar" + baz]"#);
+    }
+
+    #[test]
+    fn arithmetic_in_dataset_filter_fires() {
+        assert_fires("*[count > price + 1]");
+        assert_fires("*[a + b == c]");
+    }
+
+    #[test]
+    fn no_arithmetic_is_ok() {
+        assert_ok(r#"*[foo == "bar"]"#);
+    }
+
+    #[test]
+    fn parent_ref_in_arithmetic_exempts() {
+        // `"drafts." + ^._id` is a correlated subquery pattern.
+        assert_ok(r#"*[_type == "x"]{ refs[_id == "drafts." + ^._id] }"#);
+    }
+
+    #[test]
+    fn arithmetic_in_sub_array_filter_is_ok() {
+        // `things[...]` is a sub-array filter inside a projection, not a
+        // dataset filter — no index applies anyway.
+        assert_ok(r#"*{"x": things[foo == "bar" + baz]}"#);
+    }
+
+    #[test]
+    fn arithmetic_in_nested_dataset_filter_is_ok() {
+        // The inner filter's base is the outer filter's result, not `*`.
+        assert_ok(r#"*[_type == "x"][foo == "bar" + baz]"#);
+    }
+
+    #[test]
+    fn datetime_arithmetic_is_ok() {
+        assert_ok("*[_createdAt > dateTime(now()) + 1]");
+    }
+
+    #[test]
+    fn datetime_field_arithmetic_is_ok() {
+        assert_ok("*[_createdAt > dateTime(_updatedAt) + 60]");
+    }
+
+    #[test]
+    fn nested_datetime_arithmetic_is_ok() {
+        assert_ok("*[_createdAt > dateTime(now()) - 60 * 60 * 24]");
+    }
+
+    #[test]
+    fn namespaced_datetime_does_not_exempt() {
+        // Only the global `dateTime(...)` is exempted, not `dt::dateTime(...)`.
+        assert_fires("*[a == dt::dateTime(now()) + 1]");
+    }
+
+    #[test]
+    fn comparison_is_not_arithmetic() {
+        // Comparisons (==, !=, <, ...) are not flagged by this rule.
+        assert_ok(r#"*[foo == bar]"#);
+    }
+
+    #[test]
+    fn arithmetic_outside_any_filter_is_ok() {
+        // Arithmetic in a projection field, not inside a filter, isn't flagged.
+        assert_ok(r#"*{"sum": a + b}"#);
+    }
+}

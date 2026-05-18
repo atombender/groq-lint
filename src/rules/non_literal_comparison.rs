@@ -93,3 +93,95 @@ fn is_literal_or_parent(graph: &IrGraph, node_id: NodeId) -> bool {
         _ => false,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lint;
+
+    fn fires(query: &str) -> bool {
+        let findings = lint(query).expect("query should parse");
+        findings.iter().any(|f| f.rule_id == "non_literal_comparison")
+    }
+
+    #[track_caller]
+    fn assert_fires(query: &str) {
+        assert!(
+            fires(query),
+            "expected non_literal_comparison to fire on: {query}"
+        );
+    }
+
+    #[track_caller]
+    fn assert_ok(query: &str) {
+        assert!(
+            !fires(query),
+            "expected non_literal_comparison NOT to fire on: {query}"
+        );
+    }
+
+    #[test]
+    fn two_non_literal_attributes_fires() {
+        assert_fires(r#"*[foo == bar]"#);
+    }
+
+    #[test]
+    fn attribute_vs_literal_is_ok() {
+        assert_ok(r#"*[foo == "bar"]"#);
+    }
+
+    #[test]
+    fn attribute_vs_param_is_ok() {
+        assert_ok("*[foo == $bar]");
+    }
+
+    #[test]
+    fn attribute_vs_now_is_ok() {
+        assert_ok("*[foo == now()]");
+    }
+
+    #[test]
+    fn parent_ref_exempts() {
+        assert_ok("*[_type == 'x']{ refs[_ref == ^._id] }");
+    }
+
+    #[test]
+    fn parent_ref_in_dereference_exempts() {
+        assert_ok("*[_type == 'x']{ refs[foo._ref == ^.library->_id] }");
+    }
+
+    #[test]
+    fn parent_ref_inside_binary_exempts() {
+        assert_ok(r#"*[_type == 'x']{ refs[_id == "drafts." + ^._id] }"#);
+    }
+
+    #[test]
+    fn subquery_root_exempts() {
+        assert_fires(r#"*[foo == bar]"#); // sanity: baseline
+        assert_ok(r#"*[foo == *[0].title]"#);
+    }
+
+    #[test]
+    fn filtered_subquery_exempts() {
+        assert_ok(r#"*[foo == *[_type == "author"][0].name]"#);
+    }
+
+    #[test]
+    fn projected_subquery_exempts() {
+        assert_ok(r#"*[foo == *{title}[0].title]"#);
+    }
+
+    #[test]
+    fn inequality_between_attributes_fires() {
+        assert_fires("*[foo != bar]");
+    }
+
+    #[test]
+    fn less_than_between_attributes_fires() {
+        assert_fires("*[foo < bar]");
+    }
+
+    #[test]
+    fn folded_arithmetic_is_literal() {
+        assert_ok(r#"*[foo == 2 + 3]"#);
+    }
+}
