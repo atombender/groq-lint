@@ -387,17 +387,16 @@ impl LoweringContext {
     fn lower_filter(&mut self, filter: &groq_parser::ast::Filter) -> NodeId {
         let base = self.lower_expr(&filter.lhs);
 
-        // Create a placeholder for the filter node (for inner_scope's introducing_node)
-        let filter_id = NodeId(self.nodes.len() as u32);
-
-        // Push filter scope before lowering predicate
-        let inner_scope = self.push_scope(ScopeKind::Filter, filter_id);
+        // Push filter scope before lowering predicate. The introducing_node
+        // is a placeholder; we patch it once the Filter node is allocated below.
+        let placeholder = NodeId(self.nodes.len() as u32);
+        let inner_scope = self.push_scope(ScopeKind::Filter, placeholder);
 
         let predicate = self.lower_expr(&filter.constraint.expression);
 
         self.pop_scope();
 
-        self.alloc_node(
+        let filter_id = self.alloc_node(
             filter.pos.into(),
             NodeKind::Filter {
                 base,
@@ -405,17 +404,18 @@ impl LoweringContext {
                 inner_scope,
             },
             Provenance::Unknown,
-        )
+        );
+        self.scopes[inner_scope.0 as usize].introducing_node = filter_id;
+        filter_id
     }
 
     fn lower_projection(&mut self, proj: &groq_parser::ast::Projection) -> NodeId {
         let base = self.lower_expr(&proj.lhs);
 
-        // Create a placeholder for the projection node
-        let proj_id = NodeId(self.nodes.len() as u32);
-
-        // Push projection scope before lowering fields
-        let inner_scope = self.push_scope(ScopeKind::Projection, proj_id);
+        // Push projection scope before lowering fields. The introducing_node
+        // is a placeholder; we patch it once the Projection node is allocated below.
+        let placeholder = NodeId(self.nodes.len() as u32);
+        let inner_scope = self.push_scope(ScopeKind::Projection, placeholder);
 
         let fields = proj
             .object
@@ -426,7 +426,7 @@ impl LoweringContext {
 
         self.pop_scope();
 
-        self.alloc_node(
+        let proj_id = self.alloc_node(
             proj.pos.into(),
             NodeKind::Projection {
                 base,
@@ -434,7 +434,9 @@ impl LoweringContext {
                 inner_scope,
             },
             Provenance::Unknown,
-        )
+        );
+        self.scopes[inner_scope.0 as usize].introducing_node = proj_id;
+        proj_id
     }
 
     fn lower_projection_field(&mut self, expr: &Expr) -> ProjectionField {

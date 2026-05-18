@@ -36,8 +36,13 @@ rules:
 
   - id: computed_value_in_filter
     pattern: |
-      Binary operators like '+', '-', '*', '/' occurring within the constraint expression of a filter ([ ]),
-      EXCEPT when one side references a parent scope (^), which enables efficient correlated subquery execution.
+      Binary operators like '+', '-', '*', '/' occurring within the constraint expression of a filter ([ ])
+      that applies directly to the dataset (`*`), EXCEPT when:
+      - one side references a parent scope (^), which enables efficient correlated subquery execution; or
+      - one side involves a `dateTime()` call (e.g., `dateTime(now()) + 1`), the standard way to do date
+        math in GROQ.
+      Filters applied to sub-arrays (e.g., `things[foo == "x" + y]` inside a projection) are not flagged,
+      since dataset indices don't apply there anyway.
     advice: |
       Avoid computed values (concatenation, arithmetic, etc.) in filters. Indices cannot be used.
       Consider adding additional filters to reduce the search space.
