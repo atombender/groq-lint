@@ -96,6 +96,26 @@ rules:
     category: performance
     severity: medium
 
+  - id: unlimited_query
+    pattern: |
+      The top-level query expression queries the dataset (`*`) and has no slice or single-element
+      access anywhere along its outer chain. For example: `*[_type == "article"]`.
+      Only the top-level query is checked — subqueries (e.g., `count(*[...])`, correlated
+      subqueries in projection fields) are not flagged.
+      Exclude false positives:
+      - Exclude filters that constrain by `_id == ...` or `slug.current == ...` (either as the
+        sole constraint or in an AND-chain), as this will always fetch <= 1 results. Note that
+        `_id != ...` and `_id in [...]` are not exempted.
+      - Exclude expressions where a slice (`[a..b]`, `[a...b]`) or single-element access (`[N]`)
+        appears anywhere along the outer chain — including after a projection, ordering, array
+        coercion, or join. For example, `*[_type == "article"]{_id}[0..100]` is sliced even though
+        the slicing happens after a projection.
+    advice: |
+      Fetching many results at once can be slow. Consider adding a limit like `[0...100]`
+      and/or using cursor-based pagination (e.g., using `_id`).
+    category: performance
+    severity: medium
+
   - id: non_literal_comparison
     pattern: |
       Comparison operators (==, !=, <, >, <=, >=) where both the left-hand and right-hand sides

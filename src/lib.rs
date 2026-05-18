@@ -12,7 +12,7 @@ use groq_parser::parser::Parser;
 use crate::rules::{
     ComputedValueInFilter, CountInCorrelatedSubquery, DeepPagination, DeepPaginationParam,
     ExtremelyLargeQuery, JoinInFilter, JoinToGetId, LargePages, ManyJoins, MatchOnId,
-    NonLiteralComparison, OrderOnExpr, VeryLargeQuery,
+    NonLiteralComparison, OrderOnExpr, UnlimitedQuery, VeryLargeQuery,
 };
 
 pub struct Linter {
@@ -41,6 +41,7 @@ impl Linter {
         linter.add_rule(Box::new(DeepPaginationParam));
         linter.add_rule(Box::new(LargePages));
         linter.add_rule(Box::new(NonLiteralComparison));
+        linter.add_rule(Box::new(UnlimitedQuery));
         linter.add_rule(Box::new(CountInCorrelatedSubquery));
         linter.add_rule(Box::new(VeryLargeQuery));
         linter.add_rule(Box::new(ExtremelyLargeQuery));
