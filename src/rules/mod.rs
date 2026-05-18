@@ -124,7 +124,6 @@ mod non_literal_comparison;
 mod order_on_expr;
 mod pagination;
 mod query_size;
-mod repeated_dereference;
 
 pub use computed_value_in_filter::ComputedValueInFilter;
 pub use count_in_correlated_subquery::CountInCorrelatedSubquery;
@@ -136,4 +135,3 @@ pub use non_literal_comparison::NonLiteralComparison;
 pub use order_on_expr::OrderOnExpr;
 pub use pagination::{DeepPagination, DeepPaginationParam, LargePages};
 pub use query_size::{ExtremelyLargeQuery, VeryLargeQuery};
-pub use repeated_dereference::RepeatedDereference;

@@ -115,14 +115,6 @@ rules:
     category: performance
     severity: high
 
-  - id: repeated_dereference
-    pattern: |
-      Multiple dereference operations (->) on the same attribute within a single object projection.
-    advice: |
-      Repeatedly resolving the same reference is inefficient. Consider a single sub-projection.
-    category: performance
-    severity: low
-
   - id: count_in_correlated_subquery
     pattern: |
       count() function calls on a correlated subquery, e.g. `count(*[_id == ^._id])`.
