@@ -72,7 +72,11 @@ rules:
 
   - id: deep_pagination
     pattern: |
-      Range or slice expressions where the start index is either a literal integer >= 1000, or a $param.
+      Slice or element access expressions on documents read from the dataset (`*`, possibly filtered,
+      projected, ordered or flattened) where the start index is a literal integer >= 1000
+      (e.g., `*[_type == "x"][1000...1010]` or `*[_type == "x"][5000]`).
+      Slices of an attribute array of a single document (e.g., `*{"r": reviews[1500..1600]}`) are
+      taken in memory and are not flagged. Ranges outside a slice (e.g., `x in 1000..2000`) are not flagged.
     advice: |
       Deep pagination is slow. Consider using cursor-based pagination (e.g., using `_id`).
     category: performance
@@ -80,7 +84,9 @@ rules:
 
   - id: deep_pagination_param
     pattern: |
-      Range or slice expressions where the start index is a $param.
+      Slice or element access expressions on documents read from the dataset where the start index
+      is a $param (e.g., `*[_type == "x"][$start...$end]` or `*[_type == "x"][$start]`).
+      Slices of an attribute array of a single document are not flagged.
     advice: |
       If given a large value, this can cause deep pagination, which is slow.
       Consider using cursor-based pagination (e.g., using `_id`).
@@ -89,7 +95,9 @@ rules:
 
   - id: large_pages
     pattern: |
-      Range or slice expressions where the start index is zero and the end index is a literal integer greater than 100.
+      Slice expressions on documents read from the dataset where the start index is zero (or omitted)
+      and the end index is a literal integer greater than 100.
+      Slices of an attribute array of a single document are not flagged.
     advice: |
       Fetching many results at once can be slow. Consider breaking into smaller,
       discrete batches and/or cursor-based pagination (e.g., using `_id`).
