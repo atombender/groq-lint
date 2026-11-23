@@ -18,10 +18,15 @@ version: 1.0
 rules:
   - id: join_in_filter
     pattern: |
-      Any dereference operator (->) occurring within the constraint expression of a filter ([ ]).
+      Any dereference operator (->) occurring within the constraint expression of a filter ([ ])
+      over documents read from the dataset (`*`, possibly filtered, projected, ordered, sliced or
+      flattened). This includes filters over attribute arrays nested inside such a filter
+      (e.g., `*[count(reviews[@->rating > 3]) > 0]`).
+      Filters over an attribute array of a single document inside a projection
+      (e.g., `*{"r": reviews[@->title == "x"]}`) are not flagged, since there is no index read to lose.
     advice: |
       Avoid joins (`->`) inside filters. It prevents optimization.
-      `a->b == "c"` can be more optimally written `count(*[_id == ^.a._ref && b == "c"]) == 1`.
+      `a->b == "c"` can be more optimally written `a._ref in *[b == "c"]._id`.
     category: performance
     severity: high
 
@@ -43,6 +48,14 @@ rules:
         math in GROQ.
       Filters applied to sub-arrays (e.g., `things[foo == "x" + y]` inside a projection) are not flagged,
       since dataset indices don't apply there anyway.
+      Also, calls that are evaluated in memory for every candidate document, occurring within the
+      constraint expression of a filter over documents (`*`, possibly filtered, projected, ordered,
+      sliced or flattened), unless the call references a parent scope (^):
+      - `upper()`, `length()`, `round()`, `coalesce()` and `select()`;
+      - `defined()` of an array element (e.g., `defined(reviews[0])`);
+      - an element of `string::split()` (e.g., `string::split(title, " ")[0]`).
+      Functions the index evaluates itself, such as `lower()`, `dateTime()`, `string::startsWith()`,
+      `pt::text()`, `count(arr)`, `path()` and `references()`, are not flagged.
     advice: |
       Avoid computed values (concatenation, arithmetic, etc.) in filters. Indices cannot be used.
       Consider adding additional filters to reduce the search space.
@@ -72,7 +85,11 @@ rules:
 
   - id: deep_pagination
     pattern: |
-      Range or slice expressions where the start index is either a literal integer >= 1000, or a $param.
+      Slice or element access expressions on documents read from the dataset (`*`, possibly filtered,
+      projected, ordered or flattened) where the start index is a literal integer >= 1000
+      (e.g., `*[_type == "x"][1000...1010]` or `*[_type == "x"][5000]`).
+      Slices of an attribute array of a single document (e.g., `*{"r": reviews[1500..1600]}`) are
+      taken in memory and are not flagged. Ranges outside a slice (e.g., `x in 1000..2000`) are not flagged.
     advice: |
       Deep pagination is slow. Consider using cursor-based pagination (e.g., using `_id`).
     category: performance
@@ -80,7 +97,9 @@ rules:
 
   - id: deep_pagination_param
     pattern: |
-      Range or slice expressions where the start index is a $param.
+      Slice or element access expressions on documents read from the dataset where the start index
+      is a $param (e.g., `*[_type == "x"][$start...$end]` or `*[_type == "x"][$start]`).
+      Slices of an attribute array of a single document are not flagged.
     advice: |
       If given a large value, this can cause deep pagination, which is slow.
       Consider using cursor-based pagination (e.g., using `_id`).
@@ -89,7 +108,9 @@ rules:
 
   - id: large_pages
     pattern: |
-      Range or slice expressions where the start index is zero and the end index is a literal integer greater than 100.
+      Slice expressions on documents read from the dataset where the start index is zero (or omitted)
+      and the end index is a literal integer greater than 100.
+      Slices of an attribute array of a single document are not flagged.
     advice: |
       Fetching many results at once can be slow. Consider breaking into smaller,
       discrete batches and/or cursor-based pagination (e.g., using `_id`).
@@ -123,6 +144,9 @@ rules:
       - Literal expressions that only involve literals (e.g. 2+1 or "foo" + "bar") are considered
         literals.
       - now() is considered a literal.
+      - `dateTime(x)` and `lower(x)` take on the nature of `x`, since the index evaluates them:
+        `dateTime("2020-01-01T00:00:00Z")` is a literal, and `lower(^.name)` is a parent-scope
+        reference.
       - Params (e.g. foo) are considered literals.
       - Referring to a parent-scope attribute (e.g., `foo == ^.bar`) on either left or right side is fine
         and not covered by this rule. This extends to dereferences rooted in a parent ref
@@ -137,9 +161,17 @@ rules:
 
   - id: count_in_correlated_subquery
     pattern: |
-      count() function calls on a correlated subquery, e.g. `count(*[_id == ^._id])`.
+      count() function calls on a correlated subquery where a filter over documents has a term in its
+      `&&` chain that references a parent scope (^) and is neither an equality with ^ on exactly one
+      side (e.g., `author._ref == ^._id`) nor `references(^...)`. For example,
+      `count(*[_createdAt > ^._createdAt])`, `count(*[^._id in refs[]._ref])` or
+      `count(*[a == ^._id || b == ^._id])`.
+      Equality and `references()` conditions are batched into one index read keyed on the parent
+      value, so `count(*[author._ref == ^._id])` is not flagged, including when the subquery is
+      projected, ordered or sliced.
     advice: |
-      Using count() on a correlated subquery does not execute as an efficient aggregation, and can be slow.
+      Using count() on a correlated subquery whose `^` condition is not an equality or `references()` can be slow.
+      Every document matched by the rest of the subquery is read, then filtered in memory for each row.
     category: performance
     severity: low
 
@@ -164,7 +196,9 @@ rules:
 
   - id: many_joins
     pattern: |
-      The query uses more than 10 dereference operators (->).
+      The query uses more than 10 distinct joins. Joins on the same reference path within the same
+      projection or filter (e.g., `author->name` and `author->bio`) are merged and count once.
+      A chain of hops (e.g., `a->b->c`) counts each hop, and joins on a computed path each count.
     advice: |
       This query uses many joins, and may have poor performance as a result.
     context: whole_query
