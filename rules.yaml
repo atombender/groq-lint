@@ -137,9 +137,17 @@ rules:
 
   - id: count_in_correlated_subquery
     pattern: |
-      count() function calls on a correlated subquery, e.g. `count(*[_id == ^._id])`.
+      count() function calls on a correlated subquery where a filter over documents has a term in its
+      `&&` chain that references a parent scope (^) and is neither an equality with ^ on exactly one
+      side (e.g., `author._ref == ^._id`) nor `references(^...)`. For example,
+      `count(*[_createdAt > ^._createdAt])`, `count(*[^._id in refs[]._ref])` or
+      `count(*[a == ^._id || b == ^._id])`.
+      Equality and `references()` conditions are batched into one index read keyed on the parent
+      value, so `count(*[author._ref == ^._id])` is not flagged, including when the subquery is
+      projected, ordered or sliced.
     advice: |
-      Using count() on a correlated subquery does not execute as an efficient aggregation, and can be slow.
+      Using count() on a correlated subquery whose `^` condition is not an equality or `references()` can be slow.
+      Every document matched by the rest of the subquery is read, then filtered in memory for each row.
     category: performance
     severity: low
 
