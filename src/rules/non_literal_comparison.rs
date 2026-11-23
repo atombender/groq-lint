@@ -4,6 +4,8 @@ use crate::ir::{IrGraph, NodeId};
 use crate::ir::{NodeKind, Provenance};
 use crate::rules::{Hit, Rule};
 
+const INDEX_COERCIONS: [&str; 2] = ["dateTime", "lower"];
+
 /// Detects comparisons where both sides are non-literal (can't use indices).
 pub struct NonLiteralComparison;
 
@@ -51,6 +53,7 @@ impl Rule for NonLiteralComparison {
 /// Per rules.yaml:
 /// - Literal expressions (including computed literals like 2+1) are literals
 /// - now() is considered a literal
+/// - `dateTime(x)` and `lower(x)` are literal (or parent) when `x` is
 /// - Params ($foo) are considered literals
 /// - Parent scope refs (^.bar) on either side make the comparison allowed
 /// - Subqueries rooted in `*` (e.g., `*[0].foo`) on either side are allowed
@@ -73,7 +76,20 @@ fn is_literal_or_parent(graph: &IrGraph, node_id: NodeId) -> bool {
         NodeKind::Parent { .. } => true,
         NodeKind::Dataset => true,
         // now() is considered a literal
-        NodeKind::FunctionCall { name, .. } if name == "now" => true,
+        kind if kind.is_global_call("now") => true,
+        // The index evaluates `dateTime()` and `lower()` itself, so a coercion of
+        // a literal is a literal, and a coercion of a parent ref is a batch key.
+        NodeKind::FunctionCall {
+            args,
+            pipe_base: None,
+            ..
+        } if args.len() == 1
+            && INDEX_COERCIONS
+                .iter()
+                .any(|name| node.kind.is_global_call(name)) =>
+        {
+            is_literal_or_parent(graph, args[0])
+        }
         // Walk through attribute access (e.g., ^.foo or ^.foo.bar)
         NodeKind::Access { base, .. } => is_literal_or_parent(graph, *base),
         // Walk through dereferences (e.g., ^.library->_id) — a join rooted
@@ -100,7 +116,9 @@ mod tests {
 
     fn fires(query: &str) -> bool {
         let findings = lint(query).expect("query should parse");
-        findings.iter().any(|f| f.rule_id == "non_literal_comparison")
+        findings
+            .iter()
+            .any(|f| f.rule_id == "non_literal_comparison")
     }
 
     #[track_caller]
@@ -183,5 +201,32 @@ mod tests {
     #[test]
     fn folded_arithmetic_is_literal() {
         assert_ok(r#"*[foo == 2 + 3]"#);
+    }
+
+    #[test]
+    fn two_attributes_fire() {
+        assert_fires("*[_createdAt == _updatedAt]");
+        assert_fires("*[title == slug.current]");
+    }
+
+    #[test]
+    fn datetime_of_literal_is_a_literal() {
+        assert_ok(
+            r#"*[_type == "book" && dateTime(_createdAt) > dateTime("2020-01-01T00:00:00Z")]"#,
+        );
+        assert_fires("*[dateTime(_createdAt) > dateTime(_updatedAt)]");
+    }
+
+    #[test]
+    fn coercion_of_parent_is_a_batch_key() {
+        assert_ok(
+            r#"*[_type == "author"][0...3]{"n": count(*[_type == "book" && lower(title) == lower(^.name)])}"#,
+        );
+        assert_fires("*[lower(title) == lower(subtitle)]");
+    }
+
+    #[test]
+    fn other_functions_of_literals_are_not_literals() {
+        assert_fires(r#"*[upper(title) == upper("x")]"#);
     }
 }

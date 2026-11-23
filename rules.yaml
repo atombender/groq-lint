@@ -131,6 +131,9 @@ rules:
       - Literal expressions that only involve literals (e.g. 2+1 or "foo" + "bar") are considered
         literals.
       - now() is considered a literal.
+      - `dateTime(x)` and `lower(x)` take on the nature of `x`, since the index evaluates them:
+        `dateTime("2020-01-01T00:00:00Z")` is a literal, and `lower(^.name)` is a parent-scope
+        reference.
       - Params (e.g. foo) are considered literals.
       - Referring to a parent-scope attribute (e.g., `foo == ^.bar`) on either left or right side is fine
         and not covered by this rule. This extends to dereferences rooted in a parent ref
