@@ -188,7 +188,9 @@ rules:
 
   - id: many_joins
     pattern: |
-      The query uses more than 10 dereference operators (->).
+      The query uses more than 10 distinct joins. Joins on the same reference path within the same
+      projection or filter (e.g., `author->name` and `author->bio`) are merged and count once.
+      A chain of hops (e.g., `a->b->c`) counts each hop, and joins on a computed path each count.
     advice: |
       This query uses many joins, and may have poor performance as a result.
     context: whole_query
