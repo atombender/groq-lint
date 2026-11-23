@@ -48,6 +48,14 @@ rules:
         math in GROQ.
       Filters applied to sub-arrays (e.g., `things[foo == "x" + y]` inside a projection) are not flagged,
       since dataset indices don't apply there anyway.
+      Also, calls that are evaluated in memory for every candidate document, occurring within the
+      constraint expression of a filter over documents (`*`, possibly filtered, projected, ordered,
+      sliced or flattened), unless the call references a parent scope (^):
+      - `upper()`, `length()`, `round()`, `coalesce()` and `select()`;
+      - `defined()` of an array element (e.g., `defined(reviews[0])`);
+      - an element of `string::split()` (e.g., `string::split(title, " ")[0]`).
+      Functions the index evaluates itself, such as `lower()`, `dateTime()`, `string::startsWith()`,
+      `pt::text()`, `count(arr)`, `path()` and `references()`, are not flagged.
     advice: |
       Avoid computed values (concatenation, arithmetic, etc.) in filters. Indices cannot be used.
       Consider adding additional filters to reduce the search space.
