@@ -188,6 +188,49 @@ impl IrGraph {
     pub fn descendants(&self, node_id: NodeId) -> impl Iterator<Item = &Node> {
         DescendantIter::new(self, node_id)
     }
+
+    /// Check if a node evaluates to a stream of documents read from the dataset
+    /// (`*`, possibly filtered, projected, ordered, sliced or flattened), as
+    /// opposed to an attribute of a single document.
+    pub fn is_document_stream(&self, node_id: NodeId) -> bool {
+        match &self.node(node_id).kind {
+            NodeKind::Dataset => true,
+            NodeKind::Filter { base, .. }
+            | NodeKind::Projection { base, .. }
+            | NodeKind::Slice { base, .. }
+            | NodeKind::ArrayCoerce { base }
+            | NodeKind::FunctionCall {
+                pipe_base: Some(base),
+                ..
+            } => self.is_document_stream(*base),
+            _ => false,
+        }
+    }
+
+    /// Check if the innermost filter enclosing a node filters a document stream.
+    pub fn in_document_filter(&self, node: &Node) -> bool {
+        let mut scope_id = Some(node.scope);
+        while let Some(id) = scope_id {
+            let scope = self.scope(id);
+            if scope.kind == ScopeKind::Filter {
+                if let NodeKind::Filter { base, .. } = &self.node(scope.introducing_node).kind {
+                    return self.is_document_stream(*base);
+                }
+                return false;
+            }
+            scope_id = scope.parent;
+        }
+        false
+    }
+
+    /// Check if an expression references a parent scope (`^`).
+    pub fn involves_parent(&self, node_id: NodeId) -> bool {
+        let is_parent = |node: &Node| {
+            matches!(node.kind, NodeKind::Parent { .. })
+                || matches!(node.provenance, Provenance::Parent { .. })
+        };
+        is_parent(self.node(node_id)) || self.descendants(node_id).any(is_parent)
+    }
 }
 
 /// Iterator over scope ancestors.

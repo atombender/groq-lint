@@ -97,6 +97,15 @@ pub enum NodeKind {
     },
 }
 
+impl NodeKind {
+    /// Returns true if this is a call of the global function `name`
+    /// (`name(...)` or `global::name(...)`).
+    pub fn is_global_call(&self, name: &str) -> bool {
+        matches!(self, NodeKind::FunctionCall { name: n, namespace, .. }
+            if n == name && namespace.as_deref().is_none_or(|ns| ns == "global"))
+    }
+}
+
 /// A field in a projection.
 #[derive(Debug, Clone)]
 pub struct ProjectionField {
