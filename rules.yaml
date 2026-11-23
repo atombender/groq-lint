@@ -18,10 +18,15 @@ version: 1.0
 rules:
   - id: join_in_filter
     pattern: |
-      Any dereference operator (->) occurring within the constraint expression of a filter ([ ]).
+      Any dereference operator (->) occurring within the constraint expression of a filter ([ ])
+      over documents read from the dataset (`*`, possibly filtered, projected, ordered, sliced or
+      flattened). This includes filters over attribute arrays nested inside such a filter
+      (e.g., `*[count(reviews[@->rating > 3]) > 0]`).
+      Filters over an attribute array of a single document inside a projection
+      (e.g., `*{"r": reviews[@->title == "x"]}`) are not flagged, since there is no index read to lose.
     advice: |
       Avoid joins (`->`) inside filters. It prevents optimization.
-      `a->b == "c"` can be more optimally written `count(*[_id == ^.a._ref && b == "c"]) == 1`.
+      `a->b == "c"` can be more optimally written `a._ref in *[b == "c"]._id`.
     category: performance
     severity: high
 
